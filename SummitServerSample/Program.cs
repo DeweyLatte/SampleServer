@@ -14,6 +14,8 @@ namespace SummitServerSample
         [STAThread]
         static void Main()
         {
+            Manager man = new Manager();
+            man.Start();
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
