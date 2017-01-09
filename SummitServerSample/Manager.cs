@@ -32,15 +32,15 @@ namespace SummitServerSample
         }
 
         //You need to store the listener and handler.  You will need the handler socket to identify which client you're receiving messages from.
-        public int DummyDelegateAccept(Socket listener, Socket handler)
+        public int DummyDelegateAccept(AsynchronousSocketListener p_asl, Socket p_listener, Socket p_handler)
         {
-            Console.WriteLine("Recieved client request " + handler.RemoteEndPoint.ToString());
+            Console.WriteLine("Recieved client request " + p_handler.RemoteEndPoint.ToString());
             return 0;
         }
 
-        public int DummyDelegateReceive(Socket handler, String a)
+        public int DummyDelegateReceive(Socket p_handler, String p_msg)
         {
-            Console.WriteLine("Recieved client msg from " + handler.RemoteEndPoint.ToString() + " msg : "  + a);
+            Console.WriteLine("Recieved client msg from " + p_handler.RemoteEndPoint.ToString() + " msg : "  + p_msg);
             return 0;
         }
     }

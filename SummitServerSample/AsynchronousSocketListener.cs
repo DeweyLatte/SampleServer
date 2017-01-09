@@ -22,7 +22,7 @@ namespace SummitServerSample
     public class AsynchronousSocketListener
     {
         private int serverPort = 0;
-        private Func<Socket, Socket, int> ManagerFuncAcc;
+        private Func<AsynchronousSocketListener, Socket, Socket, int> ManagerFuncAcc;
         private Func<Socket, String, int> ManagerFuncRec;
         // Thread signal.
         public static ManualResetEvent allDone = new ManualResetEvent(false);
@@ -91,14 +91,20 @@ namespace SummitServerSample
             Socket listener = (Socket)ar.AsyncState;
             Socket handler = listener.EndAccept(ar);
 
-            int val = ManagerFuncAcc.Invoke(listener, handler);
+            int val = ManagerFuncAcc.Invoke(this, listener, handler);
 
             // Create the state object.
             StateObject state = new StateObject();
             state.workSocket = handler;
-            handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
+            try
+            {
+                handler.BeginReceive(state.buffer, 0, StateObject.BufferSize, 0,
                 new AsyncCallback(ReadCallback), state);
-
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
             
         }
 
@@ -111,8 +117,22 @@ namespace SummitServerSample
             StateObject state = (StateObject)ar.AsyncState;
             Socket handler = state.workSocket;
 
-            // Read data from the client socket. 
-            int bytesRead = handler.EndReceive(ar);
+            // Read data from the client socket.
+            if (!handler.Connected)
+            {
+                Console.WriteLine("Connection closed");
+                return;
+            }
+            int bytesRead = 0;
+            try
+            {
+                bytesRead = handler.EndReceive(ar);
+            }
+             catch(Exception e)
+            {
+                Console.WriteLine("Connection closed");
+                return;
+            }
 
             if (bytesRead > 0)
             {
@@ -132,7 +152,7 @@ namespace SummitServerSample
                     //    content.Length, content);
                     int val = ManagerFuncRec.Invoke(handler, content);
                     // Echo the data back to the client.
-                    //Send(handler, content);
+                    Send(handler, content);
                 }
                 else
                 {
@@ -143,7 +163,7 @@ namespace SummitServerSample
             }
         }
 
-        private void Send(Socket handler, String data)
+        public void Send(Socket handler, String data)
         {
             // Convert the string data to byte data using ASCII encoding.
             byte[] byteData = Encoding.ASCII.GetBytes(data);
@@ -164,8 +184,9 @@ namespace SummitServerSample
                 int bytesSent = handler.EndSend(ar);
                 Console.WriteLine("Sent {0} bytes to client.", bytesSent);
 
-                handler.Shutdown(SocketShutdown.Both);
-                handler.Close();
+
+                //handler.Shutdown(SocketShutdown.Both);
+                //handler.Close();
 
             }
             catch (Exception e)
@@ -174,7 +195,7 @@ namespace SummitServerSample
             }
         }
 
-        internal void SetUpDelegateAcc(Func<Socket, Socket, int> dummyDelegate)
+        internal void SetUpDelegateAcc(Func<AsynchronousSocketListener, Socket, Socket, int> dummyDelegate)
         {
             ManagerFuncAcc = dummyDelegate;
         }
